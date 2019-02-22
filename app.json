@@ -24,6 +24,8 @@
     ],
     "ios": {
       "supportsTablet": true
-    }
+    },
+    "description": "Swipable tabbed interface with scrollable content and a header that scrolls with scrollable content.",
+    "githubUrl": "https://github.com/colevoss/scrolly-scroller"
   }
 }
