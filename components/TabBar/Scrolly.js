@@ -13,7 +13,8 @@ export default class Scrolly extends React.Component {
     this.scrollView = React.createRef();
     this.scrollX = new Animated.Value(0);
 
-    this.scrollY = new Animated.Value(0);
+    this.scrollY = this.props.animValue || new Animated.Value(0);
+
     this.scrollEvent = Animated.event(
       [
         {
@@ -23,14 +24,21 @@ export default class Scrolly extends React.Component {
       { useNativeDriver: true },
     );
 
-    this.scrollViewRefs = this.props.tabs.map(React.createRef);
+    const tabs = this.tabsData();
+    this.scrollViewRefs = tabs.map(React.createRef);
 
-    this.scrollViewValues = this.props.tabs.map(() => 0);
+    this.scrollViewValues = tabs.map(() => 0);
 
     this.state = {
       tabBarHeight: 0,
       headerHeight: 0,
     };
+  }
+
+  tabsData() {
+    return React.Children.map(this.props.children, (child) => {
+      return child.props.tab;
+    });
   }
 
   generateScrollViewProps = (index) => {
@@ -62,7 +70,7 @@ export default class Scrolly extends React.Component {
 
   updateOtherScrollViews(index, scrollValue) {
     const { headerHeight } = this.state;
-    const { tabs } = this.props;
+    const tabs = this.tabsData();
 
     for (let i = 0; i < tabs.length; i++) {
       if (i === index) continue;
@@ -79,24 +87,32 @@ export default class Scrolly extends React.Component {
         newScrollValue = 0;
       }
 
-      this.getRefByIndex(i).current._component.scrollTo({
-        x: 0,
-        y: newScrollValue,
-        animated: false,
-      });
-
+      this.scrollComponentByIndex(i, newScrollValue);
       this.scrollViewValues[i] = newScrollValue;
     }
 
-    this.getRefByIndex(index).current._component.scrollTo({
-      x: 0,
-      y: scrollValue,
-      animated: false,
-    });
+    this.scrollComponentByIndex(index, scrollValue);
   }
 
   getRefByIndex(index) {
     return this.scrollViewRefs[index];
+  }
+
+  scrollComponentByIndex(index, scrollValue) {
+    const component = this.getRefByIndex(index).current._component;
+
+    if (component.scrollTo) {
+      component.scrollTo({
+        x: 0,
+        y: scrollValue,
+        animated: false,
+      });
+    } else {
+      component.scrollToOffset({
+        offset: scrollValue,
+        animated: false,
+      });
+    }
   }
 
   componentDidMount() {
@@ -126,7 +142,6 @@ export default class Scrolly extends React.Component {
     const { activeTabIndex } = this.props;
 
     if (activeTabIndex !== prevProps.activeTabIndex) {
-      // this.scrollY.setValue(this.scrollViewValues[activeTabIndex]);
       this.scrollToTab();
     }
   }
@@ -154,40 +169,25 @@ export default class Scrolly extends React.Component {
   };
 
   renderScenes() {
-    const { tabs } = this.props;
-
-    return tabs.map((tab, i) => {
-      return (
-        <Animated.ScrollView
-          style={styles.scene}
-          key={tab.key}
-          {...this.generateScrollViewProps(i)}
-        >
-          {Array(200)
-            .fill(0)
-            .map((_, i) => {
-              return (
-                <Text key={i}>
-                  {tab.label} {i}
-                </Text>
-              );
-            })}
-        </Animated.ScrollView>
-      );
+    return React.Children.map(this.props.children, (child, i) => {
+      return React.cloneElement(child, {
+        style: styles.scene,
+        ...this.generateScrollViewProps(i),
+      });
     });
   }
 
   render() {
-    const { tabs } = this.props;
-    const { tabBarHeight, headerHeight } = this.state;
+    const { headerHeight } = this.state;
+    const interpolatedYValue = this.scrollY.interpolate({
+      inputRange: [0, headerHeight],
+      outputRange: [0, -headerHeight],
+      extrapolate: 'clamp',
+    });
 
     const tabTransform = [
       {
-        translateY: this.scrollY.interpolate({
-          inputRange: [0, headerHeight],
-          outputRange: [0, -headerHeight],
-          extrapolate: 'clamp',
-        }),
+        translateY: interpolatedYValue,
       },
     ];
 
@@ -223,24 +223,16 @@ export default class Scrolly extends React.Component {
             transform: tabTransform,
           }}
         >
-          <View
-            onLayout={this.onHeaderLayout}
-            style={{
-              height: 200,
-              width: WIDTH,
-              backgroundColor: 'lightgreen',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text>HEADER</Text>
-          </View>
+          {this.props.header({
+            onLayout: this.onHeaderLayout,
+            height: headerHeight,
+          })}
 
           <TabBar
             scrollX={this.scrollX}
             scrollValue={this.scrollValue}
             onTabTap={this.onTabTap}
-            tabs={tabs}
+            tabs={this.tabsData()}
             onLayout={this.onTabBarLayout}
           />
         </Animated.View>

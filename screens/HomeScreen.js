@@ -1,16 +1,19 @@
 import React from 'react';
 import {
-  Image,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   SafeAreaView,
+  Animated,
+  FlatList,
+  SectionList,
   View,
 } from 'react-native';
 import { WebBrowser } from 'expo';
 import Scrolly from '../components/TabBar/Scrolly';
+
+const AnimatedFlatLIst = Animated.createAnimatedComponent(FlatList);
+const AniamtedSectionLIst = Animated.createAnimatedComponent(SectionList);
 
 import { MonoText } from '../components/StyledText';
 
@@ -33,10 +36,24 @@ const tabs = [
   },
 ];
 
+const dataArray = Array(200)
+  .fill(0)
+  .map((_, i) => i);
+
+const data = dataArray.map((i) => {
+  return <Text key={i}>{i}</Text>;
+});
+
 export default class HomeScreen extends React.Component {
   static navigationOptions = {
     header: null,
   };
+
+  constructor(props) {
+    super(props);
+
+    this.val = new Animated.Value(0);
+  }
 
   state = {
     activeTab: 0,
@@ -54,100 +71,74 @@ export default class HomeScreen extends React.Component {
       <SafeAreaView style={styles.container}>
         <Scrolly
           tabs={tabs}
+          animValue={this.val}
           activeTabIndex={this.state.activeTab}
           onUpdateTab={this.updateTab}
-        />
-        {/* <View style={styles.welcomeContainer}>
-            <Image
-              source={
-                __DEV__
-                  ? require('../assets/images/robot-dev.png')
-                  : require('../assets/images/robot-prod.png')
-              }
-              style={styles.welcomeImage}
-            />
-          </View>
+          header={({ onLayout, height }) => {
+            return (
+              <View
+                onLayout={onLayout}
+                style={{
+                  height: 200,
+                  opacity: this.val.interpolate({
+                    inputRange: [0, height],
+                    outputRange: [1, 0],
+                    extrapolate: 'clamp',
+                  }),
+                  width: '100%',
+                  backgroundColor: 'lightgreen',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text>HEADER</Text>
+              </View>
+            );
+          }}
+        >
+          <Animated.ScrollView tab={{ key: 'tab1', label: 'ScrollView 1' }}>
+            {data}
+          </Animated.ScrollView>
 
-          <View style={styles.getStartedContainer}>
-            {this._maybeRenderDevelopmentModeWarning()}
+          <AnimatedFlatLIst
+            tab={{ key: 'tabr', label: 'FlatList' }}
+            keyExtractor={(i) => i.toString()}
+            data={dataArray}
+            renderItem={({ item }) => {
+              return <Text>{item}</Text>;
+            }}
+          />
 
-            <Text style={styles.getStartedText}>Get started by opening</Text>
-
-            <View
-              style={[styles.codeHighlightContainer, styles.homeScreenFilename]}
-            >
-              <MonoText style={styles.codeHighlightText}>
-                screens/HomeScreen.js
-              </MonoText>
-            </View>
-
-            <Text style={styles.getStartedText}>
-              Change this text and your app will automatically reload.
-            </Text>
-          </View>
-
-          <View style={styles.helpContainer}>
-            <TouchableOpacity
-              onPress={this._handleHelpPress}
-              style={styles.helpLink}
-            >
-              <Text style={styles.helpLinkText}>
-                Help, it didn’t automatically reload!
+          {/* <AniamtedSectionLIst
+            tab={{ key: 'tabsection', label: 'Sectione' }}
+            renderItem={({ item, index, section }) => (
+              <Text style={{ paddingVertical: 10 }} key={index}>
+                {item}
               </Text>
-            </TouchableOpacity>
-          </View> */}
+            )}
+            renderSectionHeader={({ section: { title } }) => (
+              <Text style={{ fontWeight: 'bold' }}>{title}</Text>
+            )}
+            sections={[
+              { title: 'Title1', data: ['item1', 'item2'] },
+              { title: 'Title2', data: ['item3', 'item4'] },
+              { title: 'Title3', data: ['item5', 'item6'] },
+              { title: 'Title4', data: ['item5', 'item6'] },
+              { title: 'Title5', data: ['item5', 'item6'] },
+              { title: 'Title6', data: ['item5', 'item6'] },
+              { title: 'Title7', data: ['item5', 'item6'] },
+              { title: 'Title7', data: ['item5', 'item6'] },
+            ]}
+            keyExtractor={(item, index) => item + index}
+          /> */}
 
-        {/* <View style={styles.tabBarInfoContainer}>
-          <Text style={styles.tabBarInfoText}>
-            This is a tab bar. You can edit it in:
-          </Text>
-
-          <View
-            style={[styles.codeHighlightContainer, styles.navigationFilename]}
-          >
-            <MonoText style={styles.codeHighlightText}>
-              navigation/MainTabNavigator.js
-            </MonoText>
-          </View>
-        </View> */}
+          <Animated.ScrollView tab={{ key: 'tab2', label: 'ScrollView 2' }}>
+            {data}
+          </Animated.ScrollView>
+        </Scrolly>
       </SafeAreaView>
     );
   }
-
-  _maybeRenderDevelopmentModeWarning() {
-    if (__DEV__) {
-      const learnMoreButton = (
-        <Text onPress={this._handleLearnMorePress} style={styles.helpLinkText}>
-          Learn more
-        </Text>
-      );
-
-      return (
-        <Text style={styles.developmentModeText}>
-          Development mode is enabled, your app will be slower but you can use
-          useful development tools. {learnMoreButton}
-        </Text>
-      );
-    } else {
-      return (
-        <Text style={styles.developmentModeText}>
-          You are not in development mode, your app will run at full speed.
-        </Text>
-      );
-    }
-  }
-
-  _handleLearnMorePress = () => {
-    WebBrowser.openBrowserAsync(
-      'https://docs.expo.io/versions/latest/guides/development-mode',
-    );
-  };
-
-  _handleHelpPress = () => {
-    WebBrowser.openBrowserAsync(
-      'https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes',
-    );
-  };
 }
 
 const styles = StyleSheet.create({
