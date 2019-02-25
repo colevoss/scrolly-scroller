@@ -79,7 +79,7 @@ export default class HomeScreen extends React.Component {
               <View
                 onLayout={onLayout}
                 style={{
-                  height: 200,
+                  height: 300,
                   opacity: this.val.interpolate({
                     inputRange: [0, height],
                     outputRange: [1, 0],
